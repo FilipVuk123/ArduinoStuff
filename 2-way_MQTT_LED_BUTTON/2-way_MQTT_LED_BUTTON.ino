@@ -19,7 +19,7 @@ int broken_wifi = 0;
 
 const char broker[] = "broker.hivemq.com";
 int        port     = 1883;
-const char topic[]  = "aibnfjnevakjebvaikvc";
+const char topic[]  = "4r6zjgvrvjnw24jko75ukhbcr54kme356";
 const int connectTimeoutMs = 5000;
 long lastMillis = 0;
 
@@ -31,12 +31,14 @@ int button_pressed = 0;
 
 void setup() {
   Serial.begin(115200);
-  delay(50);
+  delay(200);
   pinMode(ledPin, OUTPUT);
   pinMode(32, OUTPUT);
   pinMode(buttonPin, INPUT);
   
   wifiMulti.addAP("FilipNet", "Jedrilica");
+  wifiMulti.addAP("VukaNET", "Zgromblj@2020:)");
+  wifiMulti.addAP("VukaNET_EXT", "Zgromblj@2020:)");
   Serial.println("Connecting Wifi...");
   if(wifiMulti.run() == WL_CONNECTED) {
     Serial.println("");
@@ -71,23 +73,34 @@ void loop() {
     Serial.println("WiFi not connected! Reconnecting...");
     broken_wifi = 1;
     errorLed(ledPin);
+    delay(2000);
   } else {
     if(broken_wifi){
       broken_wifi = 0;
       Serial.println("WiFi connected!");
       Serial.println("IP address: ");
       Serial.println(WiFi.localIP());
-      if (!mqttClient.connect(broker, port)) {
+      while (!mqttClient.connect(broker, port)) {
         Serial.print("MQTT connection failed! Error code = ");
         Serial.println(mqttClient.connectError());
-      } else {
-        mqttClient.subscribe(topic);
-        Serial.println("You're connected to the MQTT broker!");
-        goodLed(ledPin);
-        Serial.println();
-      }
+        errorLed(ledPin);
+      } 
+      mqttClient.subscribe(topic);
+      Serial.println("You're connected to the MQTT broker!");
+      goodLed(ledPin);
+      Serial.println();      
     }
   }
+  if (millis() - lastMillis > 1000*60*30){
+    if (!mqttClient.connect(broker, port)){
+      errorLed(ledPin);
+    }else{
+      mqttClient.subscribe(topic);
+      Serial.println("New connection to the MQTT broker!");
+      lastMillis = millis();
+    }
+  }
+  
   mqttClient.poll();
 
   // Button debouncing
@@ -163,4 +176,5 @@ void errorLed(int led){
   digitalWrite(led, HIGH);
   delay(200);
   digitalWrite(led, LOW);
+  delay(500);
 }
